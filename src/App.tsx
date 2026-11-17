@@ -18,6 +18,7 @@ import { DoctorsPage } from './pages/DoctorsPage';
 import { MachinesPage } from './pages/MachinesPage';
 import { AccountsPage } from './pages/AccountsPage';
 import { MyAccountPage } from './pages/MyAccountPage';
+import { OfflineIndicator } from './components/ui/OfflineIndicator';
 import { ROLE_MENUS, type MenuId } from './types';
 
 class ErrorBoundary extends Component<
@@ -281,6 +282,7 @@ export default function App() {
     <ErrorBoundary>
       <AuthProvider>
         <WorkspaceShell />
+        <OfflineIndicator />
       </AuthProvider>
     </ErrorBoundary>
   );

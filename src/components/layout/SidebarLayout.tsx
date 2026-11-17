@@ -24,6 +24,7 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { formatFullDayDateId, getTodayDateStr } from '../../lib/formatters';
 import { ROLE_MENUS, type MenuId, type ScheduleEntry } from '../../types';
+import { PWAInstallButton } from '../ui/PWAInstallButton';
 
 const MENU_ICONS: Record<MenuId, React.ComponentType<{ className?: string }>> = {
   dashboard: Gauge,
@@ -236,6 +237,9 @@ export function SidebarLayout({
                 <Clock className="h-3.5 w-3.5 text-teal-600 shrink-0" />
                 <span>{shiftDisplay}</span>
               </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <PWAInstallButton />
             </div>
           </div>
 

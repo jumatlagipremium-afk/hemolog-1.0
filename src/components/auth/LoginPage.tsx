@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { AlertCircle, CheckCircle2, Eye, EyeOff, Lock, User, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { PWAInstallButton } from '../ui/PWAInstallButton';
 
 const REMEMBER_STORAGE_KEY = 'hemolog_remembered_account';
 
@@ -438,6 +439,11 @@ export function LoginPage() {
             </button>
           </div>
         )}
+
+        <div className="mt-5 pt-4 border-t border-slate-200/80 flex items-center justify-between gap-2 text-[11px] text-slate-500">
+          <span>Akses cepat di komputer unit HD:</span>
+          <PWAInstallButton />
+        </div>
       </main>
     </div>
   );
