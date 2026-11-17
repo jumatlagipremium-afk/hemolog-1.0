@@ -33,6 +33,7 @@ import {
   withSecondaryAuth,
 } from '../lib/firebase';
 import { clampString } from '../lib/formatters';
+import { clearLastActivity, stampLastActivity } from '../hooks/useIdleTimeout';
 import type { UserProfile, UserRole } from '../types';
 
 interface AuthContextValue {
@@ -41,6 +42,8 @@ interface AuthContextValue {
   authReady: boolean;
   profileLoading: boolean;
   blockedMessage: string | null;
+  idleLogoutMessage: string | null;
+  clearIdleLogoutMessage: () => void;
   loginWithEmail: (email: string, password: string, rememberMe?: boolean) => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   registerWithEmail: (params: {
@@ -51,6 +54,7 @@ interface AuthContextValue {
   }) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
+  logoutDueToIdle: () => Promise<void>;
   updateOwnProfile: (data: {
     fullName: string;
     nip: string;
@@ -103,6 +107,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [authReady, setAuthReady] = useState(false);
   const [profileLoading, setProfileLoading] = useState(true);
   const [blockedMessage, setBlockedMessage] = useState<string | null>(null);
+  const [idleLogoutMessage, setIdleLogoutMessage] = useState<string | null>(null);
 
   useEffect(() => {
     let unsubscribeProfile: (() => void) | null = null;
@@ -114,7 +119,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       setFirebaseUser(user);
-      setBlockedMessage(null);
 
       if (!user) {
         setUserProfile(null);
@@ -122,6 +126,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setProfileLoading(false);
         return;
       }
+
+      setBlockedMessage(null);
+      setIdleLogoutMessage(null);
 
       setProfileLoading(true);
       const userRef = doc(db, 'users', user.uid);
@@ -206,11 +213,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const loginWithEmail = async (email: string, password: string, rememberMe = true) => {
     setBlockedMessage(null);
+    setIdleLogoutMessage(null);
+    stampLastActivity();
     await setPersistence(
       auth,
       rememberMe ? browserLocalPersistence : browserSessionPersistence
     );
     await signInWithEmailAndPassword(auth, email.trim(), password);
+    stampLastActivity();
   };
 
   const resetPassword = async (email: string) => {
@@ -224,7 +234,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     nip: string;
   }) => {
     setBlockedMessage(null);
+    setIdleLogoutMessage(null);
+    stampLastActivity();
     const cred = await createUserWithEmailAndPassword(auth, params.email.trim(), params.password);
+    stampLastActivity();
     const user = cred.user;
     const isBootstrap = user.emailVerified && isBootstrapAdminEmail(user.email);
     const role: UserRole = isBootstrap ? 'Administrator' : 'Perawat Pelaksana';
@@ -259,11 +272,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const loginWithGoogle = async () => {
     setBlockedMessage(null);
+    setIdleLogoutMessage(null);
+    stampLastActivity();
     const provider = new GoogleAuthProvider();
     await signInWithPopup(auth, provider);
+    stampLastActivity();
+  };
+
+  const clearIdleLogoutMessage = () => {
+    setIdleLogoutMessage(null);
   };
 
   const logout = async () => {
+    clearLastActivity();
+    setIdleLogoutMessage(null);
+    await signOut(auth);
+  };
+
+  const logoutDueToIdle = async () => {
+    clearLastActivity();
+    setIdleLogoutMessage(
+      'Sesi Anda telah otomatis logout karena tidak ada aktivitas pada aplikasi lebih dari 15 menit. Silakan masuk kembali.'
+    );
     await signOut(auth);
   };
 
@@ -462,11 +492,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         authReady,
         profileLoading,
         blockedMessage,
+        idleLogoutMessage,
+        clearIdleLogoutMessage,
         loginWithEmail,
         resetPassword,
         registerWithEmail,
         loginWithGoogle,
         logout,
+        logoutDueToIdle,
         updateOwnProfile,
         changeUserPassword,
         resendVerificationEmail,

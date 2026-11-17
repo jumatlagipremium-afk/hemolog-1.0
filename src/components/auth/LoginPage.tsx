@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AlertCircle, CheckCircle2, Eye, EyeOff, Lock, User, ArrowLeft } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Clock, Eye, EyeOff, Lock, User, ArrowLeft, X } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { PWAInstallButton } from '../ui/PWAInstallButton';
 
@@ -26,6 +26,8 @@ export function LoginPage() {
     registerWithEmail,
     loginWithGoogle,
     blockedMessage,
+    idleLogoutMessage,
+    clearIdleLogoutMessage,
   } = useAuth();
 
   const savedAccount =
@@ -204,6 +206,28 @@ export function LoginPage() {
             RS Happy Land Medical Centre Yogyakarta
           </p>
         </div>
+
+        {idleLogoutMessage && !blockedMessage && !errorMsg && (
+          <div
+            role="status"
+            className="mt-5 rounded-lg bg-amber-50 p-3.5 text-xs text-amber-900 border border-amber-200"
+          >
+            <div className="flex items-start justify-between gap-2.5">
+              <div className="flex items-start gap-2.5">
+                <Clock className="h-4 w-4 shrink-0 text-amber-600 mt-0.5" />
+                <p className="font-medium leading-relaxed">{idleLogoutMessage}</p>
+              </div>
+              <button
+                type="button"
+                onClick={clearIdleLogoutMessage}
+                aria-label="Tutup pemberitahuan"
+                className="shrink-0 rounded p-0.5 text-amber-700 hover:bg-amber-100"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </div>
+        )}
 
         {(blockedMessage || errorMsg) && (
           <div

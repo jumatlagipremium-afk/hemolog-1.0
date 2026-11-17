@@ -2,7 +2,9 @@ import React, { Component, useEffect, useMemo, useState } from 'react';
 import { Activity, AlertTriangle } from 'lucide-react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { useUnitData } from './hooks/useUnitData';
+import { useIdleTimeout } from './hooks/useIdleTimeout';
 import { LoginPage } from './components/auth/LoginPage';
+import { IdleTimeoutModal } from './components/auth/IdleTimeoutModal';
 import { RoleGuard } from './components/auth/RoleGuard';
 import { SidebarLayout } from './components/layout/SidebarLayout';
 import { DashboardPage } from './pages/DashboardPage';
@@ -62,8 +64,21 @@ class ErrorBoundary extends Component<
 }
 
 function WorkspaceShell() {
-  const { firebaseUser, userProfile, authReady, profileLoading } = useAuth();
+  const {
+    firebaseUser,
+    userProfile,
+    authReady,
+    profileLoading,
+    logout,
+    logoutDueToIdle,
+  } = useAuth();
   const [activeMenu, setActiveMenu] = useState<MenuId>('dashboard');
+
+  const isAuthenticated = authReady && !profileLoading && Boolean(firebaseUser && userProfile);
+  const { showWarning, remainingSeconds, resetActivity } = useIdleTimeout({
+    enabled: isAuthenticated,
+    onTimeout: logoutDueToIdle,
+  });
 
   const {
     loading,
@@ -261,19 +276,29 @@ function WorkspaceShell() {
   };
 
   return (
-    <SidebarLayout
-      activeMenu={activeMenu}
-      onSelectMenu={setActiveMenu}
-      pendingVerificationCount={pendingVerificationCount}
-      schedules={schedules}
-    >
-      <RoleGuard
-        menuId={activeMenu}
-        onBackToDashboard={() => setActiveMenu('dashboard')}
+    <>
+      <SidebarLayout
+        activeMenu={activeMenu}
+        onSelectMenu={setActiveMenu}
+        pendingVerificationCount={pendingVerificationCount}
+        schedules={schedules}
       >
-        {renderPage()}
-      </RoleGuard>
-    </SidebarLayout>
+        <RoleGuard
+          menuId={activeMenu}
+          onBackToDashboard={() => setActiveMenu('dashboard')}
+        >
+          {renderPage()}
+        </RoleGuard>
+      </SidebarLayout>
+      <IdleTimeoutModal
+        isOpen={showWarning}
+        remainingSeconds={remainingSeconds}
+        onExtend={resetActivity}
+        onLogoutNow={() => {
+          void logout();
+        }}
+      />
+    </>
   );
 }
 
